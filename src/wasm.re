@@ -84,7 +84,7 @@ module ToBin = {
   let makeBuf = bufSize => {
     open TArray;
     let ab = makeBuffer(bufSize);
-    let arr = makeU8(ab);
+    let arr = makeu8(ab);
     {arr, size: 0, bufSize, buf: ab};
   };
   let typeCode = tpe =>
@@ -100,11 +100,11 @@ module ToBin = {
     };
   let writeStr = (a, str, idx, strLen) => {
     open TArray;
-    setU8(a, idx, strLen);
+    setu8(a, idx, strLen);
     let idx = idx + 1;
     let rec loop = i =>
       if (i < strLen) {
-        setU8(a, idx + i, int_of_char(String.unsafe_get(str, i)));
+        setu8(a, idx + i, int_of_char(String.unsafe_get(str, i)));
         loop(i + 1);
       };
     loop(0);
@@ -113,18 +113,18 @@ module ToBin = {
     TArray.(
       switch (instr) {
       | GetLocal(n) =>
-        setU8(a, idx, 0x20);
-        setU8(a, idx + 1, Hashtbl.find(func.localIdx, n));
+        setu8(a, idx, 0x20);
+        setu8(a, idx + 1, Hashtbl.find(func.localIdx, n));
         idx + 2;
       | I32Add =>
-        setU8(a, idx, 0x6a);
+        setu8(a, idx, 0x6a);
         idx + 1;
       | I32Const(i) =>
-        setU8(a, idx, 0x41);
+        setu8(a, idx, 0x41);
         let idx =
           List.fold_left(
             (idx, b) => {
-              setU8(a, idx, b);
+              setu8(a, idx, b);
               idx + 1;
             },
             idx + 1,
@@ -140,39 +140,39 @@ module ToBin = {
     let a = buf.arr;
     open TArray;
     /* Binary magic header, \0asm */
-    setU8(a, 0, 0x0);
-    setU8(a, 1, 0x61);
-    setU8(a, 2, 0x73);
-    setU8(a, 3, 0x6d);
+    setu8(a, 0, 0x0);
+    setu8(a, 1, 0x61);
+    setu8(a, 2, 0x73);
+    setu8(a, 3, 0x6d);
     /* Wasm version */
-    setU8(a, 4, 0x1);
+    setu8(a, 4, 0x1);
     /* Type section, this lists function signatures */
-    setU8(a, 8, 0x1);
+    setu8(a, 8, 0x1);
     let typesSizeIdx = 9;
-    setU8(a, 10, numFuncs);
+    setu8(a, 10, numFuncs);
     /* Todo: Imports */
     /* For each function, add params and returns specifiers */
     let idx =
       List.fold_left(
         (idx, f) => {
           /* Func type specifier */
-          setU8(a, idx, 0x60);
+          setu8(a, idx, 0x60);
           /* Params array */
-          setU8(a, idx + 1, f.numParams);
+          setu8(a, idx + 1, f.numParams);
           let idx =
             List.fold_left(
               (idx, p) => {
-                setU8(a, idx, typeCode(p.tpe));
+                setu8(a, idx, typeCode(p.tpe));
                 idx + 1;
               },
               idx + 2,
               f.params,
             );
           /* Returns array */
-          setU8(a, idx, f.numReturns);
+          setu8(a, idx, f.numReturns);
           List.fold_left(
             (idx, tpe) => {
-              setU8(a, idx, typeCode(tpe));
+              setu8(a, idx, typeCode(tpe));
               idx + 1;
             },
             idx + 1,
@@ -183,25 +183,25 @@ module ToBin = {
         modul.funcs,
       );
     /* Set types section byte size */
-    setU8(a, typesSizeIdx, idx - typesSizeIdx - 1);
+    setu8(a, typesSizeIdx, idx - typesSizeIdx - 1);
     /* Function section, this lists functions found in code section below */
-    setU8(a, idx, 0x03);
+    setu8(a, idx, 0x03);
     /* Section size */
-    setU8(a, idx + 1, numFuncs + 1);
+    setu8(a, idx + 1, numFuncs + 1);
     /* Num functions (array len) */
-    setU8(a, idx + 2, numFuncs);
+    setu8(a, idx + 2, numFuncs);
     /* Set type index for each function */
     let (idx, _) =
       List.fold_left(
         ((idx, i), _f) => {
-          setU8(a, idx, i);
+          setu8(a, idx, i);
           (idx + 1, i + 1);
         },
         (idx + 3, 0),
         modul.funcs,
       );
     /* Export section */
-    setU8(a, idx, 0x07);
+    setu8(a, idx, 0x07);
     let exportSizeIdx = idx + 1;
     let (idx, _i, numExports) =
       List.fold_left(
@@ -209,13 +209,13 @@ module ToBin = {
           if (f.export) {
             /* Write function name to exports */
             let nameLen = String.length(f.name);
-            setU8(a, idx, nameLen);
+            setu8(a, idx, nameLen);
             writeStr(a, f.name, idx + 1, nameLen);
             let idx = idx + nameLen + 2;
             /* Export kind is function (0x0) */
-            setU8(a, idx, 0x0);
+            setu8(a, idx, 0x0);
             /* Function type index */
-            setU8(a, idx + 1, i);
+            setu8(a, idx + 1, i);
             (idx + 2, i + 1, numExports + 1);
           } else {
             (idx, i + 1, numExports);
@@ -224,36 +224,36 @@ module ToBin = {
         modul.funcs,
       );
     /* Set export section size */
-    setU8(a, exportSizeIdx, idx - exportSizeIdx - 1);
-    setU8(a, exportSizeIdx + 1, numExports);
+    setu8(a, exportSizeIdx, idx - exportSizeIdx - 1);
+    setu8(a, exportSizeIdx + 1, numExports);
     /* Code section */
-    setU8(a, idx, 0x0a);
+    setu8(a, idx, 0x0a);
     let codeSizeIdx = idx + 1;
-    setU8(a, idx + 2, numFuncs);
+    setu8(a, idx + 2, numFuncs);
     let idx =
       List.fold_left(
         (idx, f) => {
           let numLocals = List.length(f.locals);
           let funcSizeIdx = idx;
           /* todo: write locals */
-          setU8(a, idx + 1, numLocals);
+          setu8(a, idx + 1, numLocals);
           let idx =
             List.fold_left(
               (idx, instr) => writeInstr(a, f, instr, idx),
               idx + 2,
               f.instr,
             );
-          setU8(a, funcSizeIdx, idx - funcSizeIdx);
+          setu8(a, funcSizeIdx, idx - funcSizeIdx);
           /* End function */
-          setU8(a, idx, 0x0b);
+          setu8(a, idx, 0x0b);
           idx + 1;
         },
         idx + 3,
         modul.funcs,
       );
-    setU8(a, codeSizeIdx, idx - codeSizeIdx - 1);
+    setu8(a, codeSizeIdx, idx - codeSizeIdx - 1);
     buf.size = idx;
-    (buf.size, makeU8Spec(buf.buf, 0, buf.size));
+    (buf.size, makeu8Spec(buf.buf, 0, buf.size));
   };
 };
 
@@ -326,7 +326,7 @@ let printArr = (a, size) => {
       Js.log3(
         "adr",
         Utils.hexString(i),
-        Utils.hexString(TArray.getU8(a, i)),
+        Utils.hexString(TArray.getu8(a, i)),
       );
       loop(i + 1);
     };
