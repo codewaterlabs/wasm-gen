@@ -85,11 +85,11 @@ let modul = modul => {
   setu8(a, 3, 0x6d);
   /* Wasm version */
   setu8(a, 4, 0x1);
+  /* Todo: Imports */
   /* Type section, this lists function signatures */
   setu8(a, 8, 0x1);
   let typesSizeIdx = 9;
   setu8(a, 10, numFuncs);
-  /* Todo: Imports */
   /* For each function, add params and returns specifiers */
   let idx =
     L.reduceU(
@@ -190,6 +190,7 @@ let modul = modul => {
   (buf.size, makeu8Spec(buf.buf, 0, buf.size));
 };
 
+/* Can compare with ie https://cdn.rawgit.com/WebAssembly/wabt/aae5a4b7/demo/wat2wasm/ */
 let printArr = (a, size) => {
   let rec loop = i =>
     if (i < size) {

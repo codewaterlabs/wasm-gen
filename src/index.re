@@ -28,3 +28,8 @@ type exports;
 let ex = exports(instance);
 
 Js.log(addTwo(ex, 1, 2));
+
+/*let t = Factorial.Func.call(Int(2));*/
+Js.log(Factorial.F.getImpl());
+
+let t = Dsl.Eq(Int(1), Factorial.F.getImpl());
