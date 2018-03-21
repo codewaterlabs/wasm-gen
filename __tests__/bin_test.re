@@ -23,7 +23,7 @@ module Moduls = {
 [@bs.send] external addTwo : (exports, int, int) => int = "addTwo";
 
 let modulToExports = m => {
-  let (_size, bin) = Wasm.ToBin.modul(m);
+  let (_size, bin) = ToBin.modul(m);
   let instance = JsWasm.(instance(modul(bin)));
   exports(instance);
 };

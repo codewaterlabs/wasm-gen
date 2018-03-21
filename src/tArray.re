@@ -11,15 +11,11 @@ type u8Arr;
 /* I32 */
 [@bs.new] external makei32 : buf => i32Arr = "Int32Array";
 
-[@bs.val] external geti32 : (i32Arr, int) => int = "arrayGet";
-
-[@bs.val] external seti32 : (i32Arr, int, int) => int = "arraySet";
-
 external __i32ToArr : i32Arr => array(int) = "%identity";
 
 let geti32 = (arr, idx) => Belt.Array.getUnsafe(__i32ToArr(arr), idx);
 
-let setu8 = (arr, idx, v) => Belt.Array.setUnsafe(__i32ToArr(arr), idx, v);
+let seti32 = (arr, idx, v) => Belt.Array.setUnsafe(__i32ToArr(arr), idx, v);
 
 /* I8 */
 [@bs.new] external makei8 : buf => i8Arr = "Int8Array";

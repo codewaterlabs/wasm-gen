@@ -4,7 +4,7 @@ describe("Basic sexpr", () =>
   Expect.(
     test("minimal", () => {
       let m = Wasm.(modul([]));
-      expect(Wasm.ToSexp.modul(m)) |> toBe("(module\n)\n");
+      expect(ToSexpr.modul(m)) |> toBe("(module\n)\n");
     })
   )
 );

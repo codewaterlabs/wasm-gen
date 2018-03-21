@@ -12,9 +12,9 @@ let m =
     ])
   );
 
-Js.log(Wasm.ToSexp.modul(m));
+Js.log(ToSexpr.modul(m));
 
-let (size, bin) = Wasm.ToBin.modul(m);
+let (size, bin) = ToBin.modul(m);
 
 /*Wasm.printArr(bin, size);*/
 let instance = JsWasm.(instance(modul(bin)));
