@@ -1,8 +1,4 @@
-type func('ret) = string
-and func1('a1, 'ret) = (string, string)
-and func2('a1, 'a2, 'ret) = (string, string, string)
-and call1('a1, 'ret) = (func1('a1, 'ret), expr('a1))
-and expr(_) =
+type expr(_) =
   /* Constants */
   | Int(int): expr(int)
   | Bool(bool): expr(bool)
@@ -21,11 +17,13 @@ and expr(_) =
   | Add(expr('a), expr('a)): expr('a)
   | Sub(expr('a), expr('a)): expr('a)
   /* Control flow */
-  | Call(func('ret)): expr('ret)
-  | Call1(expr('a1)): expr('ret)
-  | Call2(func2('a1, 'a2, 'ret), expr('a1), expr('a2)): expr('ret)
   | If(expr(bool), expr('a), expr('a)): expr('a)
-  | Placeholder: expr('a);
+  | Call(Wasm.func): expr('ret)
+  | Call1(Wasm.func, expr(_)): expr('ret)
+  | Call2(Wasm.func, expr(_), expr(_)): expr('ret)
+  | Recurse: expr('ret)
+  | Recurse1(expr(_)): expr('ret)
+  | Recurse2(expr(_), expr(_)): expr('ret);
 
 /* Dsl operators */
 let (+::) = (arg1: expr('a), arg2: expr('a)) => Add(arg1, arg2);
@@ -40,13 +38,30 @@ let (>::) = (arg1: expr('a), arg2: expr('a)) => Gt(arg1, arg2);
 
 let (<::) = (arg1: expr('a), arg2: expr('a)) => Lt(arg1, arg2);
 
+module type DslType = {type tpe; let wasmType: Wasm.tpe;};
+
+module type DslTypeSpec = {type tpe; let wasmType: Wasm.tpe;};
+
+module DslTypeMake = (Spec: DslTypeSpec) : (DslType with type tpe = Spec.tpe) => {
+  type tpe = Spec.tpe;
+  let wasmType = Spec.wasmType;
+};
+
+module DslInt =
+  DslTypeMake(
+    {
+      type tpe = int;
+      let wasmType = Wasm.I32;
+    },
+  );
+
+/* Modules with functors to make a typed interface for functions */
 /* Function with 1 argument */
 module F1 = {
-  /* DeclSpec to be passed to Decl functor */
-  module type DeclSpec = {let ident: string; type a1; type ret;};
   /* DeclInst to be returned from Decl functor */
   module type DeclInst = {
-    include DeclSpec;
+    type a1;
+    type ret;
     let a1: expr(a1);
     let call: expr(a1) => expr(ret);
   };
@@ -54,22 +69,38 @@ module F1 = {
      includes some helpful code for FuncSpec, variables
      for arguments, and recursive call helper */
   module Decl =
-         (Spec: DeclSpec)
-         : (DeclInst with type a1 = Spec.a1 and type ret = Spec.ret) => {
-    include Spec;
-    let a1: expr(Spec.a1) = Local("a1");
-    let call = (a1: expr(Spec.a1)) : expr(Spec.ret) => Call1(a1);
+         (A1: DslType, Ret: DslType)
+         : (DeclInst with type a1 = A1.tpe and type ret = Ret.tpe) => {
+    type a1 = A1.tpe;
+    type ret = Ret.tpe;
+    let a1: expr(A1.tpe) = Local("a1");
+    /* Recursive call */
+    let call = (a1: expr(A1.tpe)) : expr(Ret.tpe) => Recurse1(a1);
   };
-  /* Funcspec to be passed to make, includes impl */
-  module type FuncSpec = {include DeclSpec; let impl: expr(ret);};
+  /* Funcspec to be passed to make */
+  module type FuncSpec = {
+    include DeclInst;
+    let ident: string;
+    let impl: expr(ret);
+  };
   /* Function instance, meant to be usable in dsl usage */
   module type Inst = {include FuncSpec; let getImpl: unit => expr(ret);};
   /* Make function instance */
   module Make =
          (Spec: FuncSpec)
          : (Inst with type a1 := Spec.a1 and type ret := Spec.ret) => {
-    let ident = Spec.ident;
-    let impl = Spec.impl;
+    include Spec;
+    let wasmFunc = ref(None);
+    let getWasmFunc = () =>
+      switch (wasmFunc^) {
+      | Some(f) => f
+      | None =>
+        let f = Wasm.func(ident, [], [], [], [], true);
+        wasmFunc := Some(f);
+        f;
+      };
+    let call = (a1: expr(Spec.a1)) : expr(Spec.ret) =>
+      Call1(getWasmFunc(), a1);
     let getImpl = () => impl;
   };
 };
