@@ -11,20 +11,16 @@ type u8Arr;
 /* I32 */
 [@bs.new] external makei32 : buf => i32Arr = "Int32Array";
 
-external __i32ToArr : i32Arr => array(int) = "%identity";
+[@bs.get_index] external geti32 : (i32Arr, int) => int = "";
 
-let geti32 = (arr, idx) => Belt.Array.getUnsafe(__i32ToArr(arr), idx);
-
-let seti32 = (arr, idx, v) => Belt.Array.setUnsafe(__i32ToArr(arr), idx, v);
+[@bs.set_index] external seti32 : (i32Arr, int, int) => unit = "";
 
 /* I8 */
 [@bs.new] external makei8 : buf => i8Arr = "Int8Array";
 
-external __i8ToArr : i8Arr => array(int) = "%identity";
+[@bs.get_index] external geti8 : (i8Arr, int) => int = "";
 
-let geti8 = (arr, idx) => Belt.Array.getUnsafe(__i8ToArr(arr), idx);
-
-let seti8 = (arr, idx, v) => Belt.Array.setUnsafe(__i8ToArr(arr), idx, v);
+[@bs.set_index] external seti8 : (i8Arr, int, int) => unit = "";
 
 /* U8 */
 [@bs.new] external makeu8 : buf => u8Arr = "Uint8Array";
@@ -32,8 +28,6 @@ let seti8 = (arr, idx, v) => Belt.Array.setUnsafe(__i8ToArr(arr), idx, v);
 /* Make with specified offset, length */
 [@bs.new] external makeu8Spec : (buf, int, int) => u8Arr = "Uint8Array";
 
-external __u8ToArr : u8Arr => array(int) = "%identity";
+[@bs.get_index] external getu8 : (u8Arr, int) => int = "";
 
-let getu8 = (arr, idx) => Belt.Array.getUnsafe(__u8ToArr(arr), idx);
-
-let setu8 = (arr, idx, v) => Belt.Array.setUnsafe(__u8ToArr(arr), idx, v);
+[@bs.set_index] external setu8 : (u8Arr, int, int) => unit = "";
